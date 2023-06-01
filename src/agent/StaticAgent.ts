@@ -1,134 +1,82 @@
 import * as tf from '@tensorflow/tfjs-node';
-import { DequeBuffer, Frame } from '../experimental/DequeBuffer';
-import { Action } from '../game/Action';
-import { Reward } from '../game/Reward';
-import { StaticModel } from './StaticModel';
-import * as fs from 'fs-extra';
+
+import { Action } from '../game/Action.js';
+import { DequeBuffer } from '../experimental/DequeBuffer.js';
+import { Reward } from '../game/Reward.js';
+import { StaticModel } from './StaticModel.js';
+import fs from 'fs-extra';
 
 export class StaticAgent {
-  private discount: number = 0.8;
-  private trainModel: any;
-  private predictModel: any;
-  public buffer: DequeBuffer;
-  public training: boolean = false;
-  public epsilon: number = 0.9;
-  public epsilonDecay: number = 0.99998875;
-  public score: number = 0;
-  public updateEvery: number = 100;
-  public toUpdate: number = 0;
-  public step: number = 0;
-  public verify: any;
+  private trainModel: tf.LayersModel;
+  private predictModel: tf.LayersModel;
+  buffer = new DequeBuffer(300000);
+  training = false;
+  epsilon = 0.9;
+  epsilonDecay = 0.99998875;
+  score = 0;
+  updateEvery = 100;
+  toUpdate = 0;
+  step = 0;
+  verify = tf.tensor2d(fs.readJSONSync('./src/testing/test.data.json'));
 
-  constructor() {
-    this.buffer = new DequeBuffer(300000);
-
-    this.verify = tf.tensor2d(fs.readJSONSync('./src/testing/test.data.json'));
-  }
-
-  init = async (loadPretrained: boolean = false) => {
+  async init(loadPretrained = false) {
+    this.predictModel = this.trainModel = loadPretrained ? await tf.loadLayersModel('file://static-pretrained/model.json') : StaticModel.create()
     if (loadPretrained) {
-      this.predictModel = await tf.loadLayersModel('file://static-pretrained/model.json');
-      this.trainModel = await tf.loadLayersModel('file://static-pretrained/model.json');
       this.predictModel.compile({ loss: 'meanSquaredError', optimizer: 'adam' });
       this.trainModel.compile({ loss: 'meanSquaredError', optimizer: 'adam' });
       this.predictModel.summary();
       this.trainModel.summary();
       console.log('loaded');
-    } else {
-      this.predictModel = StaticModel.create();
-      this.trainModel = StaticModel.create();
     }
-  };
+  }
 
-  train = async () => {
+  async train() {
     if (this.buffer.canTrain(250000)) {
-      const batch = this.buffer.sample(100);
-      const states: any = [];
-      const nextStates: any = [];
-      batch.forEach(element => {
-        states.push(element.state);
-        nextStates.push(element.nextState);
-      });
-
-      const currentQs = tf.tidy(() => {
-        return this.trainModel.predict(tf.tensor2d(states)).arraySync();
-      });
-
-      const nextQs: any = tf.tidy(() => {
-        return this.trainModel.predict(tf.tensor2d(nextStates)).arraySync();
-      });
-
-      const x: any = [];
-      const y: any = [];
-      batch.forEach((frame: Frame, index: number) => {
-        let newQ;
-        if (frame.reward === Reward.OBSTACLE) {
-          newQ = frame.reward;
-        } else {
-          const maxFutureQ = Math.max(...nextQs[index]);
-          newQ = frame.reward + this.discount * maxFutureQ;
-        }
-
-        const currentQ = currentQs[index];
-        currentQ[frame.action - 1] = newQ;
+      const batch = this.buffer.sample(100), x: number[][] = [], y: any[] = [];
+      batch.forEach((frame, index) => {
+        const currentQ = tf.tidy((this.trainModel.predict(tf.tensor2d(Array.from(batch, element => element.state))) as tf.Tensor).arraySync)[index];
+        currentQ[frame.action - 1] = frame.reward === Reward.OBSTACLE ? frame.reward : frame.reward + 0.8 * Math.max(
+          ...tf.tidy((this.trainModel.predict(tf.tensor2d(Array.from(batch, element => element.nextState))) as tf.Tensor).arraySync)[index]
+        );
         x.push(frame.state);
         y.push(currentQ);
       });
-
-      const xTensor = tf.tensor2d(x);
-      const yTensor = tf.tensor2d(y);
-
-      await this.trainModel.fit(xTensor, yTensor, { verbose: false });
+      await this.trainModel.fit(tf.tensor2d(x), tf.tensor2d(y));
       await this.saveModel();
       this.updateModel();
-
-      tf.dispose(yTensor);
-      tf.dispose(xTensor);
-
-      this.epsilon = this.epsilon * this.epsilonDecay;
-
+      this.epsilon *= this.epsilonDecay;
       this.testPredict();
     }
-  };
+  }
 
-  saveModel = async () => {
+  async saveModel() {
     if (this.step % 1000 === 0) {
       await this.trainModel.save('file://pretrained/static/step' + this.step);
       console.log('SAVING MODEL, EPSILON: ' + this.epsilon + ' STEP: ' + this.step);
     }
-  };
+  }
 
-  predict = async (state: any): Promise<any> => {
+  async predict(state: any) {
     this.step++;
     await this.train();
-
-    if (Math.random() < this.epsilon) {
-      return Action.random();
-    }
-
-    return tf.tidy(() => {
-      const qs = this.predictModel.predict(tf.tensor2d([state])).dataSync();
-
-      const highestReward = Object.keys(qs).reduce((a, b) => (qs[a] > qs[b] ? a : b));
-
-      return parseInt(highestReward) + 1;
+    return Math.random() < this.epsilon ? Action.random() : tf.tidy(() => {
+      const qs = (this.predictModel.predict(tf.tensor2d([state])) as tf.Tensor).dataSync();
+      return parseInt(Object.keys(qs).reduce((a, b) => qs[a] > qs[b] ? a : b)) + 1;
     });
-  };
+  }
 
-  updateModel = () => {
+  updateModel() {
     this.toUpdate++;
     if (this.toUpdate > this.updateEvery) {
       this.predictModel.setWeights(this.trainModel.getWeights());
       console.log('UPDATING MODEL, EPSILON: ' + this.epsilon + ' STEP: ' + this.step);
       this.toUpdate = 0;
     }
-  };
+  }
 
-  testPredict = () => {
-    tf.tidy(() => {
-      this.trainModel.predict(this.verify).print();
-    });
+  testPredict() {
+    tf.tidy((this.trainModel.predict(this.verify) as tf.Tensor).print);
     console.log('EPSILON: ' + this.epsilon);
     console.log('3, 1, 4');
-  };
+  }
 }

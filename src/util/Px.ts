@@ -1,11 +1,11 @@
 export class Px {
-  public static pxInSquare: number = 10;
+  static pxInSquare = 10;
 
-  public static scaleUp(pixels: number): number {
-    return pixels * Px.pxInSquare;
+  static scaleUp(pixels: number): number {
+    return pixels * this.pxInSquare;
   }
 
-  public static scaleDown(square: number): number {
-    return square / Px.pxInSquare;
+  static scaleDown(square: number): number {
+    return square / this.pxInSquare;
   }
 }

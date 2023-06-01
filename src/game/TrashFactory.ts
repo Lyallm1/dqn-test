@@ -1,49 +1,29 @@
-import { TakenSpots } from './TakenSpots';
+import { TakenSpots } from './TakenSpots.js';
+import { Trash } from './Trash.js';
 import { random } from 'lodash';
-import { Trash } from './Trash';
 
 export class TrashFactory {
-  public static createStatic = (context: any, takenSpots: TakenSpots): Trash[] => {
-    const positions = ['5,5', '5,6', '3,2', '3,6', '4,1'];
+  static createStatic(context: CanvasRenderingContext2D, takenSpots: TakenSpots) {
     const trash: Trash[] = [];
-
-    positions.forEach((pos: string) => {
-      const [x, y] = pos.split(',');
+    ['5,5', '5,6', '3,2', '3,6', '4,1'].forEach(pos => {
       takenSpots.add(pos);
-
-      trash.push(new Trash(1, 1, parseInt(x), parseInt(y), context, 'red'));
+      trash.push(new Trash(1, 1, parseInt(pos.split(',')[0]), parseInt(pos.split(',')[1]), context, 'red'));
     });
-
-    return trash;
-  };
-
-  public static create(
-    count: number,
-    gameWidth: number,
-    gameHeight: number,
-    context: any,
-    takenSpots: TakenSpots
-  ): Trash[] {
-    const trash: Trash[] = [];
-    for (let i = 0; i < count; i++) {
-      const position = TrashFactory.generateUnique(gameWidth, gameHeight, takenSpots);
-      takenSpots.add(position);
-
-      const x = parseInt(position.split(',')[0]);
-      const y = parseInt(position.split(',')[1]);
-      trash.push(new Trash(1, 1, x, y, context, 'red'));
-    }
-
     return trash;
   }
 
-  public static generateUnique = (gameWidth: number, gameHeight: number, takenSpots: TakenSpots): string => {
-    const position = `${random(gameWidth - 1)},${random(gameHeight - 1)}`;
-
-    if (takenSpots.all().find(pos => pos === position)) {
-      return TrashFactory.generateUnique(gameWidth, gameHeight, takenSpots);
+  static create(count: number, gameWidth: number, gameHeight: number, context: CanvasRenderingContext2D, takenSpots: TakenSpots): Trash[] {
+    const trash: Trash[] = [];
+    for (let i = 0; i < count; i++) {
+      const position = this.generateUnique(gameWidth, gameHeight, takenSpots);
+      takenSpots.add(position);
+      trash.push(new Trash(1, 1, parseInt(position.split(',')[0]), parseInt(position.split(',')[1]), context, 'red'));
     }
+    return trash;
+  }
 
-    return position;
-  };
+  static generateUnique(gameWidth: number, gameHeight: number, takenSpots: TakenSpots): string {
+    const position = `${random(gameWidth - 1)},${random(gameHeight - 1)}`;
+    return takenSpots.all().find(pos => pos === position) ? this.generateUnique(gameWidth, gameHeight, takenSpots) : position;
+  }
 }

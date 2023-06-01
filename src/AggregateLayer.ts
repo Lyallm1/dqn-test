@@ -1,22 +1,11 @@
-import * as tf from '@tensorflow/tfjs-node';
+import * as tf from '@tensorflow/tfjs-node'
 
 export class AggregateLayer extends tf.layers.Layer {
-  call(input: any) {
-    return tf.tidy(() => {
-      const advantage = input[0];
-      const value = input[1];
-
-      const mean = tf.mean(advantage, 1, true);
-      const sub = advantage.sub(mean);
-      const add = value.add(sub);
-
-      return add;
-    });
+  call(input: tf.Tensor[]) {
+    return tf.tidy(() => input[1].add(input[0].sub(input[0].mean(1, true))));
   }
 
-  static get className() {
-    return 'AggregateLayer';
-  }
+  static get className() { return 'AggregateLayer'; }
 
   computeOutputShape() {
     return [1, 4];

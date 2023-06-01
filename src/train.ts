@@ -1,32 +1,17 @@
-import { Game } from './game/Game';
-import { StaticAgent } from './agent/StaticAgent';
+import { Game } from './game/Game.js';
+import { StaticAgent } from './agent/StaticAgent.js';
 
-const agent = new StaticAgent();
-const render = false;
-
-const start = async () => {
+const agent = new StaticAgent(), start = async () => {
   await agent.init();
-
-  while (true) {
-    const state = game.getState();
-    const action = await agent.predict(state);
-    const frame = game.step(action);
-    agent.buffer.append(frame);
-  }
-};
-
-const game = new Game('canvas', 8, 8, render, true);
-
+  while (true) agent.buffer.append(game.step(await agent.predict(game.getState())));
+}, game = new Game('canvas', 8, 8, false, true);
 game.endGameCallback = () => {
   agent.score = 0;
   game.start();
 };
-
-game.successCallback = (object1: any, object2: any) => {
+game.successCallback = (_, object2) => {
   agent.score++;
   object2.delete();
 };
-
 game.start();
-
 start();

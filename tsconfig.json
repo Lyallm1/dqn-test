@@ -2,10 +2,10 @@
   "compilerOptions": {
     "outDir": "qlearning/dist",
     "sourceMap": true,
-    "noImplicitAny": true,
-    "module": "commonjs",
-    "target": "es5",
+    "noImplicitAny": false,
+    "module": "NodeNext",
+    "target": "ES2022",
     "jsx": "react",
     "allowJs": true
-  }
+  }, "include": ["src"]
 }

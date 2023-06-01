@@ -1,48 +1,23 @@
-import { Game } from './game/Game';
-import { NonStaticAgent } from './agent/NonStaticAgent';
-import { DuelingDqn } from './agent/DuelingDqn';
-import { Model } from './agent/Model';
-import * as prompts from 'prompts';
+import { DuelingDqn } from './agent/DuelingDqn.js';
+import { Game } from './game/Game.js';
+import { Model } from './agent/Model.js';
+import { NonStaticAgent } from './agent/NonStaticAgent.js';
+import prompts from 'prompts';
 
-const agent = new NonStaticAgent();
-const render = false;
-
-const start = async () => {
-  const { model } = await prompts({
-    type: 'text',
-    name: 'model',
-    message: 'Enter model (dueling, dqn)'
-  });
-
-  switch (model) {
-    case 'dueling':
-      await agent.init(false, DuelingDqn);
-      break;
-    case 'dqn':
-      await agent.init(false, Model);
-      break;
+const agent = new NonStaticAgent(), start = async () => {
+  switch ((await prompts({ type: 'text', name: 'model', message: 'Enter model (dueling, dqn)' })).model) {
+    case 'dueling': await agent.init(false, DuelingDqn); break;
+    case 'dqn': await agent.init(false, Model); break;
   }
-
-  while (true) {
-    const state = game.getState();
-    const action = await agent.predict(state);
-    const frame = game.step(action);
-    agent.buffer.append(frame);
-  }
-};
-
-const game = new Game('canvas', 8, 8, render, false);
-
+  while (true) agent.buffer.append(game.step(await agent.predict(game.getState())));
+}, game = new Game('canvas', 8, 8, false, false);
 game.endGameCallback = () => {
   agent.score = 0;
   game.start();
 };
-
-game.successCallback = (object1: any, object2: any) => {
+game.successCallback = (_, object2) => {
   agent.score++;
   object2.delete();
 };
-
 game.start();
-
 start();

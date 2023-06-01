@@ -1,14 +1,15 @@
-import { GameEntity } from './GameEntity';
-import { EntityType } from './EntityType';
+import { EntityType } from './EntityType.js';
+import { GameEntity } from './GameEntity.js';
 
 export class Trash extends GameEntity {
   removed = false;
+
   getType() {
     return EntityType.TRASH;
   }
 
-  delete = () => {
+  delete() {
     this.setPosition({ x: -5000, y: -5000 });
     this.removed = true;
-  };
+  }
 }

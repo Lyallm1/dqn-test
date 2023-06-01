@@ -1,20 +1,16 @@
 import { sample } from 'lodash';
 
 export class Action {
-  public static UP = 1;
-  public static DOWN = 2;
-  public static LEFT = 3;
-  public static RIGHT = 4;
+  static UP = 1;
+  static DOWN = 2;
+  static LEFT = 3;
+  static RIGHT = 4;
 
-  public static toArray(): any {
+  static toArray() {
     return Object.values(Action).filter(value => typeof value === 'number');
   }
 
-  public static random(actions?: number[]) {
-    if (actions && actions.length > 0) {
-      return sample(actions);
-    }
-
-    return sample(Action.toArray());
+  static random(actions?: number[]) {
+    return sample(actions && actions.length > 0 ? actions : this.toArray());
   }
 }

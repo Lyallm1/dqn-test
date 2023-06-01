@@ -1,24 +1,25 @@
 <!DOCTYPE html>
 <html>
   <head>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <style>
       canvas {
         border: 1px solid #d3d3d3;
         background-color: #f1f1f1;
       }
+      body, div { display: flex; }
+      div { flex-direction: column; }
     </style>
   </head>
-
-  <body style="display:flex;">
-    <div style="display: flex;flex-direction:column;">
+  <body>
+    <div>
       <canvas id="canvas-static"></canvas>
-      <input id="static-model" />
+      <input id="static-model">
       <button id="static-model-button">Load Model</button>
     </div>
-    <div style="display: flex;flex-direction:column;">
+    <div>
       <canvas id="canvas-nonstatic"></canvas>
-      <input id="nonstatic-model" />
+      <input id="nonstatic-model">
       <button id="nonstatic-model-button">Load Model</button>
     </div>
     <script src="dist/bundle.js"></script>

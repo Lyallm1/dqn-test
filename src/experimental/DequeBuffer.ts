@@ -9,35 +9,22 @@ export interface Frame {
 }
 
 export class DequeBuffer {
-  private maxSize: number;
-
   private _frames: Frame[] = [];
+  get frames() { return this._frames; }
+  set frames(v) { this._frames = v; }
 
-  public get frames(): Frame[] {
-    return this._frames;
-  }
+  constructor(private maxSize: number) {}
 
-  public set frames(v: Frame[]) {
-    this._frames = v;
-  }
-
-  constructor(maxSize: number) {
-    this.maxSize = maxSize;
-  }
-
-  public append = (frame: Frame) => {
-    if (this.frames.length > this.maxSize) {
-      this.frames.shift();
-    }
-
+  append(frame: Frame) {
+    if (this.frames.length > this.maxSize) this.frames.shift();
     this.frames.push(frame);
-  };
+  }
 
-  public sample = (batchSize: number): Frame[] => {
+  sample(batchSize: number) {
     return sampleSize(this.frames, batchSize);
-  };
+  }
 
-  public canTrain = (batchSize: number): boolean => {
+  canTrain(batchSize: number) {
     return this.frames.length > batchSize;
-  };
+  }
 }

@@ -1,5 +1,5 @@
-import { GameEntity } from './GameEntity';
-import { EntityType } from './EntityType';
+import { EntityType } from './EntityType.js';
+import { GameEntity } from './GameEntity.js';
 
 export class Obstacle extends GameEntity {
   getType() {

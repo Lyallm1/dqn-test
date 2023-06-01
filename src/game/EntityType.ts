@@ -1,6 +1,1 @@
-export enum EntityType {
-  VOID = 0,
-  OBSTACLE = 1,
-  TRASH = 2,
-  ME = 3
-}
+export enum EntityType { VOID, OBSTACLE, TRASH, ME }
